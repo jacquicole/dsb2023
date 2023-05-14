@@ -1,6 +1,6 @@
 ---
-title: "Homerwork 1"
-author: "YOUR NAME HERE"
+title: "Homework 1"
+author: "Jacqui Cole"
 date: 2023-05-14
 format: 
   docx: default
