@@ -1,6 +1,6 @@
 ---
 title: "Homerwork 2"
-author: "YOUR NAME HERE"
+author: "Jacqui Cole"
 date: 2023-05-21
 format: 
   docx: default
@@ -46,7 +46,7 @@ glimpse(mass_shootings)
 ```
 
 | column(variable)     | description                                                                 |
-|-------------------------|----------------------------------------------|
+|--------------------------|----------------------------------------------|
 | case                 | short name of incident                                                      |
 | year, month, day     | year, month, day in which the shooting occurred                             |
 | location             | city and state where the shooting occcurred                                 |
@@ -130,8 +130,7 @@ Make sure to provide a couple of sentences of written interpretation of your tab
 
 We will be using a dataset with credit card transactions containing legitimate and fraud transactions. Fraud is typically well below 1% of all transactions, so a naive model that predicts that all transactions are legitimate and not fraudulent would have an accuracy of well over 99%-- pretty good, no? (well, not quite as we will see later in the course)
 
-You can read more on credit card fraud on 
-[Credit Card Fraud Detection Using Weighted Support Vector Machine](https://www.scirp.org/journal/paperinformation.aspx?paperid=105944)
+You can read more on credit card fraud on [Credit Card Fraud Detection Using Weighted Support Vector Machine](https://www.scirp.org/journal/paperinformation.aspx?paperid=105944)
 
 The dataset we will use consists of credit card transactions and it includes information about each transaction including customer details, the merchant and category of purchase, and whether or not the transaction was a fraud.
 
@@ -154,7 +153,7 @@ The data dictionary is as follows
 | column(variable)      | description                                 |
 |-----------------------|---------------------------------------------|
 | trans_date_trans_time | Transaction DateTime                        |
-| trans_year | Transaction year                        |
+| trans_year            | Transaction year                            |
 | category              | category of merchant                        |
 | amt                   | amount of transaction                       |
 | city                  | City of card holder                         |
@@ -168,31 +167,33 @@ The data dictionary is as follows
 | merch_long            | Longitude Location of Merchant              |
 | is_fraud              | Whether Transaction is Fraud (1) or Not (0) |
 
-
 -   In this dataset, how likely are fraudulent transactions? Generate a table that summarizes the number and frequency of fraudulent transactions per year.
+
 ```{r}
 
 ```
 
--   How much money (in US$ terms) are fraudulent transactions costing the company? Generate a table that summarizes the total amount of legitimate and fraudulent transactions per year and calculate the % of fraudulent transactions, in US$ terms.
+-   How much money (in US\$ terms) are fraudulent transactions costing the company? Generate a table that summarizes the total amount of legitimate and fraudulent transactions per year and calculate the % of fraudulent transactions, in US\$ terms.
+
 ```{r}
 
 ```
-
 
 -   Generate a histogram that shows the distribution of amounts charged to credit card, both for legitimate and fraudulent accounts. Also, for both types of transactions, calculate some quick summary statistics.
-```{r}
-
-```
-
-- What types of purchases are most likely to be instances of fraud? Consider category of merchants and produce a bar chart that shows % of total fraudulent transactions sorted in order.
 
 ```{r}
 
 ```
 
-- When is fraud more prevalent? Which days, months, hours? To create new variables to help you in your analysis, we use the `lubridate` package and the following code
+-   What types of purchases are most likely to be instances of fraud? Consider category of merchants and produce a bar chart that shows % of total fraudulent transactions sorted in order.
+
+```{r}
+
 ```
+
+-   When is fraud more prevalent? Which days, months, hours? To create new variables to help you in your analysis, we use the `lubridate` package and the following code
+
+```         
 mutate(
   date_only = lubridate::date(trans_date_trans_time),
   month_name = lubridate::month(trans_date_trans_time, label=TRUE),
@@ -201,10 +202,9 @@ mutate(
   )
 ```
 
+-   Are older customers significantly more likely to be victims of credit card fraud? To calculate a customer's age, we use the `lubridate` package and the following code
 
-- Are older customers significantly more likely to be victims of credit card fraud? To calculate a customer's age, we use the `lubridate` package and the following code
-
-```
+```         
   mutate(
    age = interval(dob, trans_date_trans_time) / years(1),
     )
@@ -214,8 +214,7 @@ mutate(
 
 ```
 
-- Is fraud related to distance? The distance between a card holder’s home and the location of the transaction can be a feature that is related to fraud. To calculate distance, we need the latidue/longitude of card holders's home and the latitude/longitude of the transaction, and we will use the [Haversine formula](https://en.wikipedia.org/wiki/Haversine_formula) to calculate distance. I adapted code to  [calculate distance between two points on earth](https://www.geeksforgeeks.org/program-distance-two-points-earth/amp/) which you can find below
-
+-   Is fraud related to distance? The distance between a card holder's home and the location of the transaction can be a feature that is related to fraud. To calculate distance, we need the latidue/longitude of card holders's home and the latitude/longitude of the transaction, and we will use the [Haversine formula](https://en.wikipedia.org/wiki/Haversine_formula) to calculate distance. I adapted code to [calculate distance between two points on earth](https://www.geeksforgeeks.org/program-distance-two-points-earth/amp/) which you can find below
 
 ```{r}
 # distance between card holder's home and transaction
@@ -242,10 +241,6 @@ fraud <- fraud %>%
 ```
 
 Plot a boxplot or a violin plot that looks at the relationship of distance and `is_fraud`. Does distance seem to be a useful feature in explaining fraud?
-
-
-
-
 
 # Exploring sources of electricity production, CO2 emissions, and GDP per capita.
 
