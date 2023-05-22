@@ -141,7 +141,14 @@ mass_shootings %>%
 ```{r}
 mass_shootings %>%
   count(month) %>%
-  ggplot(mapping = aes(x = month, y = n)) + geom_col() + scale_x_discrete(limits = month.abb)
+  ggplot(mapping = aes(x = month, y = n)) + geom_col() + scale_x_discrete(limits = month.abb) + labs(title = "When are mass shootings more common?", subtitle = "No. of mass shootings n versus their monthly occurrence")
+
+#This bar plot reveals that mass shootings in the US most commonly occur during the month of February. I now produce a data fram that shows the explicit number that occur per month (revealing that this is 13 in February):
+
+monthlyvariation <- mass_shootings %>%
+  count(month) %>%
+  arrange(desc(n)) 
+monthlyvariation
 ```
 
 \
