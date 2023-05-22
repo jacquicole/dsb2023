@@ -196,13 +196,43 @@ mass_shootings %>%
 -   Are mass shootings with shooters suffering from mental illness different from mass shootings with no signs of mental illness in the shooter?
 
 ```{r}
+mass_shootings %>%
+  filter (!is.na(prior_mental_illness)) %>%
+  group_by(total_victims,prior_mental_illness) %>%
+  ggplot(mapping = aes(total_victims)) + geom_bar() + facet_wrap(vars(prior_mental_illness))
+
+# This plot shows that there are many more shooters who have a priori known signs of mental illness than there are otherwise. The max number of victims that they affect is the same in each case. There is a greater tail of more victims in the case where a mental illness is known in the shooter prior to the shooting.
 
 ```
 
--   Assess the relationship between mental illness and total victims, mental illness and location type, and the intersection of all three variables.
+Assess the relationship between mental illness and total victims, mental illness and location type, and the intersection of all three variables.
 
 ```{r}
+#I then explore the relative distribution of total victims versus fatalities in shootings and see if there is a difference between those who are killed or injured as a function of whether or not the shooter showed any prior signs of mental illness. I plot the total victims (green) versus fatalities (dark blue) on each of the two faceted plots that partitions those showing prior signs of mental illness ("Yes") and those that did not. The code and graph are below. The results show that the relative proportions of fatalities and injured victims are similar irrespective of the mental state of the shooter.
 
+mass_shootings %>%
+  filter (!is.na(prior_mental_illness)) %>%
+  group_by(total_victims,fatalities,prior_mental_illness) %>%
+  ggplot(mapping = aes(x = total_victims, y = fatalities, fill = fatalities)) + geom_bar(stat="identity", colour = "green") + facet_wrap(vars(prior_mental_illness))
+
+
+#I now explore possible correlation between mental health and location type using similar code and visualisation:
+
+mass_shootings %>%
+  filter (!is.na(prior_mental_illness)) %>%
+  group_by(location_type,prior_mental_illness) %>%
+  ggplot(mapping = aes(location_type)) + geom_bar() + facet_wrap(vars(prior_mental_illness)) + theme(axis.text = element_text(size=5))
+
+#This plot shows that the school, workplace or other location types are shooting venues with the same proportion, while only shooters with prior signs of mental illness appear to target religious, military and airport locations.
+
+#I then explore possible correlation between the three variables: prior_mental_illness, location_type and total_victims:
+
+mass_shootings %>%
+  filter (!is.na(prior_mental_illness)) %>%
+  group_by(total_victims,location_type,prior_mental_illness) %>%
+  ggplot(mapping = aes(x = total_victims)) + geom_histogram() + facet_grid(rows = vars(location_type), cols = vars(prior_mental_illness)) + theme(axis.text = element_text(size=5),strip.text.y = element_text (size = 4))
+
+#These results show that ....
 ```
 
 Make sure to provide a couple of sentences of written interpretation of your tables/figures. Graphs and tables alone will not be sufficient to answer this question.
