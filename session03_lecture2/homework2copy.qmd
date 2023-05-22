@@ -191,7 +191,7 @@ mass_shootings %>%
 
 ```
 
-### Very open-ended
+###   Very open-ended
 
 -   Are mass shootings with shooters suffering from mental illness different from mass shootings with no signs of mental illness in the shooter?
 
@@ -254,9 +254,9 @@ The dataset is too large to be hosted on Canvas or Github, so please download it
 #| message: false
 #| warning: false
 
-card_fraud <- read_csv(here::here("data", "card_fraud.csv"))
+#card_fraud <- read_csv(here::here("data", "card_fraud.csv"))
 
-glimpse(card_fraud)
+#glimpse(card_fraud)
 ```
 
 The data dictionary is as follows
@@ -332,22 +332,22 @@ mutate(
 # code adapted from https://www.geeksforgeeks.org/program-distance-two-points-earth/amp/
 
 
-fraud <- fraud %>%
-  mutate(
+#fraud <- fraud %>%
+ # mutate(
     
     # convert latitude/longitude to radians
-    lat1_radians = lat / 57.29577951,
-    lat2_radians = merch_lat / 57.29577951,
-    long1_radians = long / 57.29577951,
-    long2_radians = merch_long / 57.29577951,
+  #  lat1_radians = lat / 57.29577951,
+   # lat2_radians = merch_lat / 57.29577951,
+    #long1_radians = long / 57.29577951,
+    #long2_radians = merch_long / 57.29577951,
     
     # calculate distance in miles
-    distance_miles = 3963.0 * acos((sin(lat1_radians) * sin(lat2_radians)) + cos(lat1_radians) * cos(lat2_radians) * cos(long2_radians - long1_radians)),
+    #distance_miles = 3963.0 * acos((sin(lat1_radians) * sin(lat2_radians)) + cos(lat1_radians) * cos(lat2_radians) * cos(long2_radians - long1_radians)),
 
     # calculate distance in km
-    distance_km = 6377.830272 * acos((sin(lat1_radians) * sin(lat2_radians)) + cos(lat1_radians) * cos(lat2_radians) * cos(long2_radians - long1_radians))
+    #distance_km = 6377.830272 * acos((sin(lat1_radians) * sin(lat2_radians)) + cos(lat1_radians) * cos(lat2_radians) * cos(long2_radians - long1_radians))
 
-  )
+  #)
 
 ```
 
@@ -374,53 +374,53 @@ We will get energy data from the Our World in Data website, and CO2 and GDP per 
 #| warning: false
 
 # Download electricity data
-url <- "https://nyc3.digitaloceanspaces.com/owid-public/data/energy/owid-energy-data.csv"
+#url <- "https://nyc3.digitaloceanspaces.com/owid-public/data/energy/owid-energy-data.csv"
 
-energy <- read_csv(url) %>% 
-  filter(year >= 1990) %>% 
-  drop_na(iso_code) %>% 
-  select(1:3,
-         biofuel = biofuel_electricity,
-         coal = coal_electricity,
-         gas = gas_electricity,
-         hydro = hydro_electricity,
-         nuclear = nuclear_electricity,
-         oil = oil_electricity,
-         other_renewable = other_renewable_exc_biofuel_electricity,
-         solar = solar_electricity,
-         wind = wind_electricity, 
-         electricity_demand,
-         electricity_generation,
-         net_elec_imports,	# Net electricity imports, measured in terawatt-hours
-         energy_per_capita,	# Primary energy consumption per capita, measured in kilowatt-hours	Calculated by Our World in Data based on BP Statistical Review of World Energy and EIA International Energy Data
-         energy_per_gdp,	# Energy consumption per unit of GDP. This is measured in kilowatt-hours per 2011 international-$.
-         per_capita_electricity, #	Electricity generation per capita, measured in kilowatt-hours
-  ) 
+#energy <- read_csv(url) %>% 
+ # filter(year >= 1990) %>% 
+#  drop_na(iso_code) %>% 
+ # select(1:3,
+#         biofuel = biofuel_electricity,
+#         coal = coal_electricity,
+#         gas = gas_electricity,
+#         hydro = hydro_electricity,
+#         nuclear = nuclear_electricity,
+#         oil = oil_electricity,
+#         other_renewable = other_renewable_exc_biofuel_electricity,
+#         solar = solar_electricity,
+#         wind = wind_electricity, 
+#         electricity_demand,
+#         electricity_generation,
+#         net_elec_imports,	# Net electricity imports, measured in terawatt-hours
+#         energy_per_capita,	# Primary energy consumption per capita, measured in kilowatt-hours	Calculated by Our World in Data based on BP Statistical Review of World Energy and EIA International Energy Data
+#         energy_per_gdp,	# Energy consumption per unit of GDP. This is measured in kilowatt-hours per 2011 international-$.
+#         per_capita_electricity, #	Electricity generation per capita, measured in kilowatt-hours
+ # ) 
 
 # Download data for C02 emissions per capita https://data.worldbank.org/indicator/EN.ATM.CO2E.PC
-co2_percap <- wb_data(country = "countries_only", 
-                      indicator = "EN.ATM.CO2E.PC", 
-                      start_date = 1990, 
-                      end_date = 2022,
-                      return_wide=FALSE) %>% 
-  filter(!is.na(value)) %>% 
+#co2_percap <- wb_data(country = "countries_only", 
+#                      indicator = "EN.ATM.CO2E.PC", 
+#                      start_date = 1990, 
+#                      end_date = 2022,
+#                      return_wide=FALSE) %>% 
+#  filter(!is.na(value)) %>% 
   #drop unwanted variables
-  select(-c(unit, obs_status, footnote, last_updated)) %>% 
-  rename(year = date,
-         co2percap = value)
+#  select(-c(unit, obs_status, footnote, last_updated)) %>% 
+#  rename(year = date,
+#         co2percap = value)
 
 
 # Download data for GDP per capita  https://data.worldbank.org/indicator/NY.GDP.PCAP.PP.KD
-gdp_percap <- wb_data(country = "countries_only", 
-                      indicator = "NY.GDP.PCAP.PP.KD", 
-                      start_date = 1990, 
-                      end_date = 2022,
-                      return_wide=FALSE) %>% 
-  filter(!is.na(value)) %>% 
+#gdp_percap <- wb_data(country = "countries_only", 
+#                      indicator = "NY.GDP.PCAP.PP.KD", 
+#                      start_date = 1990, 
+#                      end_date = 2022,
+##                      return_wide=FALSE) %>% 
+#  filter(!is.na(value)) %>% 
   #drop unwanted variables
-  select(-c(unit, obs_status, footnote, last_updated)) %>% 
-  rename(year = date,
-         GDPpercap = value)
+#  select(-c(unit, obs_status, footnote, last_updated#)) %>% 
+#  rename(year = date,
+#         GDPpercap = value)
 ```
 
 Specific questions:
