@@ -156,10 +156,42 @@ monthlyvariation
 -   How does the distribution of mass shooting fatalities differ between White and Black shooters? What about White and Latino shooters?
 
 ```{r}
+mass_shootings %>%
+  filter (!is.na(race)) %>%
+  count(fatalities,race) %>%
+  group_by(fatalities,n,race) %>%
+  ggplot() + (aes(x = fatalities, y = n)) + geom_col() + facet_wrap(vars(race)) + labs(title = "How Shooter's Race Affects their Killing Tally?", subtitle = "Frequency distribution of fatalities per shooter's race", x = "Number of fatalities", y = "Frequency") 
+
+#This set of plots reveal that white, black and Latino shooters track a similar killing distribution profile. There are many fewer cases of black and Latino shooters, but the max point in the distribution appears to be similar between all three cases while the distribution for white shooters seems to have a longer tail at the upper boundary; this suggests that a small proportion of white shooters may shoot many more than those from another race (although it is difficult to make any concrete conclusions as the sample is small). We can calculate the mean to assist although these values not surprisingly vary because of the small samples involved (so we cannot regard these as representative except for the overall mean and the mean for white shooters - which are similar):
+
+#Determining the overall mean (= 8)
+
+mass_shootings %>%
+  filter(!is.na(fatalities)) %>%
+  summarise(meanfat = mean(fatalities)) 
+
+#Determining the mean for white shooters (= 8.8)
+
+mass_shootings %>%
+  filter(!is.na(fatalities)) %>%
+  filter(race == "White") %>%
+  summarise(meanfat = mean(fatalities)) 
+
+#Determining the mean for black shooters (= 5.6)
+mass_shootings %>%
+  filter(!is.na(fatalities)) %>%
+  filter(race == "Black") %>%
+  summarise(meanfat = mean(fatalities)) 
+
+#Determining the mean for latino shooters (= 4.4)
+mass_shootings %>%
+  filter(!is.na(fatalities)) %>%
+  filter(race == "Latino") %>%
+  summarise(meanfat = mean(fatalities)) 
 
 ```
 
-### Very open-ended
+###   Very open-ended
 
 -   Are mass shootings with shooters suffering from mental illness different from mass shootings with no signs of mental illness in the shooter?
 
