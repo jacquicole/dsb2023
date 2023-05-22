@@ -125,14 +125,26 @@ Address the following questions. Generate appropriate figures/tables to support 
 -   How many white males with prior signs of mental illness initiated a mass shooting after 2000?
 
 ```{r}
+# There are 125 entries of mass shootings in this database. I filter these down to those that occurred after 2000, where the shooter is white and had shown signs of prior mental illness. This produces a tibble of 23 entries.
+
+mass_shootings %>%
+  filter(year > 2000, race == "White", prior_mental_illness == "Yes")
+
+#i.e. There are 23 white males with prior signs of mental illness initiated a mass shooting after 2000.
 
 ```
+
+\
 
 -   Which month of the year has the most mass shootings? Generate a bar chart sorted in chronological (natural) order (Jan-Feb-Mar- etc) to provide evidence of your answer.
 
 ```{r}
-
+mass_shootings %>%
+  count(month) %>%
+  ggplot(mapping = aes(x = month, y = n)) + geom_col() + scale_x_discrete(limits = month.abb)
 ```
+
+\
 
 -   How does the distribution of mass shooting fatalities differ between White and Black shooters? What about White and Latino shooters?
 
