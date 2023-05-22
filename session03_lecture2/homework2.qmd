@@ -1,5 +1,5 @@
 ---
-title: "Homerwork 2"
+title: "Homework 2"
 author: "Jacqui Cole"
 date: 2023-05-21
 format: 
@@ -67,25 +67,55 @@ glimpse(mass_shootings)
 -   Generate a data frame that summarizes the number of mass shootings per year.
 
 ```{r}
-
+#creating a dataframe of the frequency (n) of mass shootings per year and saving it as msperyear.
+df_msperyear <- mass_shootings %>%
+count(year)
 ```
 
 -   Generate a bar chart that identifies the number of mass shooters associated with each race category. The bars should be sorted from highest to lowest and each bar should show its number.
 
 ```{r}
 
+#Read in data and filter out entries for race that are not applicable (NA)
+mass_shootings %>%
+  filter(!is.na(race)) %>%
+#Produce a frequency metric, n, for the number of times a mass shooter is of a specific race
+  count(race) %>%
+#Plot the result, ordering the race from highest to lowest frequency of occurrence.
+ggplot(mapping = aes(reorder(race, -n, sum),n)) + geom_col() +labs(title = "Relationship between Mass Shooters and Race", subtitle = "Frequency of mass shootings in the US by shooter's race", x = "Race of shooter", y = "Frequency")
 ```
+
+\
 
 -   Generate a boxplot visualizing the number of total victims, by type of location.
 
 ```{r}
-
+# I produce a boxplot to visualise the number of total victims of mass shootings in the US by type of location. The code and plot are given below.
+  ggplot(data = mass_shootings, mapping = aes(location_type,total_victims)) + geom_boxplot() + labs(x = "Location Type", y = "Total number of victims", title = "Victim Numbers by Mass-Shooting Location", subtitle = "Variation in victim count with mass-shooting location type")
+  
 ```
+
+\
 
 -   Redraw the same plot, but remove the Las Vegas Strip massacre from the dataset.
 
 ```{r}
-
+#I note that there is a extreme data outlier in the location_type 'other' category and that its particularly high total number of victims skews the presentation of the plot. There are also two other much larger data points in other. In order that the rest of the data show up in good proportioning, I identify these three data points in order to consider removing them and then replot the trend:
+   mass_shootings %>%
+     count(total_victims) %>%
+     arrange(desc(total_victims))
+#This produces a table where the three highest values can be easily identified. I first filter out the largest data outlier and replot the trend:
+   
+   mass_shootings %>%
+     filter(total_victims != 604) %>%
+   ggplot(mapping = aes(location_type,total_victims)) + geom_boxplot() + labs(x = "Location Type", y = "Total number of victims", title = "Victim Numbers by Mass-Shooting Location", subtitle = "Variation in victim count with mass-shooting location type", caption = "*'Other' data with 604 victims from the Las Vegas Strip massacre are not shown")
+   
+#I then filter out the other two large 'Other' data outliers and then replot the trend in order to obtain even better data proportioning of the results:
+   mass_shootings %>%
+     filter(total_victims != 604) %>%
+     filter(total_victims != 102) %>%
+     filter(total_victims != 82) %>%
+   ggplot(mapping = aes(location_type,total_victims)) + geom_boxplot() + labs(x = "Location Type", y = "Total number of victims", title = "Victim Numbers by Mass-Shooting Location", subtitle = "Variation in victim count with mass-shooting location type", caption = "*Three 'Other' data, with 604, 102 and 82 victims, are not shown, for clarity.")
 ```
 
 ### More open-ended questions
