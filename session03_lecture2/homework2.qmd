@@ -46,7 +46,7 @@ glimpse(mass_shootings)
 ```
 
 | column(variable)     | description                                                                 |
-|--------------------------|----------------------------------------------|
+|----------------------|-----------------------------------------------------------------------------|
 | case                 | short name of incident                                                      |
 | year, month, day     | year, month, day in which the shooting occurred                             |
 | location             | city and state where the shooting occcurred                                 |
@@ -281,12 +281,34 @@ The data dictionary is as follows
 -   In this dataset, how likely are fraudulent transactions? Generate a table that summarizes the number and frequency of fraudulent transactions per year.
 
 ```{r}
-
+card_fraud %>% #reading in dataset
+  count(is_fraud) %>% #generating no. of fraud cases
+  mutate(freq_as_a_percent = 100*n/sum(n)) #calculate proportion of fraudulent cases by percent:
 ```
 
 -   How much money (in US\$ terms) are fraudulent transactions costing the company? Generate a table that summarizes the total amount of legitimate and fraudulent transactions per year and calculate the % of fraudulent transactions, in US\$ terms.
 
 ```{r}
+#Generating a table that summarizes the amount of legitimate and fraudulent transactions per year 
+
+amt2019 <- card_fraud %>%
+  filter(trans_year == 2019) %>%
+  summarise(amt2019 = sum(amt))
+amt2019
+amt2020 <- card_fraud %>%
+  filter(trans_year == 2020) %>%
+  summarise(amt2020 = sum(amt))
+
+transyear <- c("2019", "2020") 
+yearlyamt <- c("33606041", "13577863") 
+
+df <- data.frame(transyear, yearlyamt) 
+df[] <- lapply(df, as.numeric)
+df
+#calculate the % of fraudulent transactions, in US$ terms.
+
+df %>%
+  mutate(freq_as_percent = 100*yearlyamt/sum(yearlyamt))
 
 ```
 
