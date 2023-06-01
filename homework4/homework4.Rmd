@@ -1,8 +1,12 @@
 ---
-title: "Homework 4: Machine Learning"
+title: 'Homework 4: Machine Learning'
 author: "Jacqui Cole"
 date: "`r Sys.Date()`"
 output:
+  word_document:
+    toc: yes
+  pdf_document:
+    toc: yes
   html_document:
     theme: flatly
     highlight: zenburn
@@ -10,8 +14,6 @@ output:
     toc: yes
     toc_float: yes
     code_folding: show
-  pdf_document:
-    toc: yes
 ---
 
 ```{r}
@@ -163,6 +165,33 @@ bechdel %>%
   select(test, budget_2013, domgross_2013, intgross_2013, imdb_rating, metascore)%>% 
   ggpairs(aes(colour=test), alpha=0.2)+
   theme_bw()
+
+#The output of the following correlation matrix tests reveal that:
+#(a) the variables have quite different distributions 
+#- metascore is somewhere between a trianglular and normal distribution;
+#- imbb_rating appears to be a fairly normal distribution albeit with a small left skew;
+#-the budget_2013, domgross_2013 and intgross_2013 variables show a near Voigt function that is cut off on the left and which is highly right skewed, as most data are of low values.
+#(b) The test data (Fail and Pass) seem to be fairly even in number and the distribution of Fail and Pass data, as judged by the similar profiles showing in the plots that comprise the left hand column below the test histogram. This evenness is important because it shows that the test data are balanced when it comes to a machine-learning application. A corrolaary to this is t also shows that a random partitioning of the data into a training and testing dataset should result in a balanced set of split datasets.
+#(c) The correlation values for the total datasets (in black font) show that there are significant levels of correlation between the following variables:
+#
+#  52% correlation between domgross_2013 and budget_2013
+#  62% correlation between intgross_2013 and budget_2013
+#  94% correlation between intgross_2013 and domgross_2013
+#  74% correlation between metascore and imdb_rating
+#
+# This makes intuitive sense because one would hope that the larger the budget for a film, the more that the film will profit in both domestic and international gross. As a corrolary, one would expect a correlation between domestic and international gross, assuming that most films are international (as hollywood films tend to be).
+#
+# Meanwhile, one would intuitively expect there to be a correlation in ratings: the imdb_rating and the metascore in this case.
+#
+# Note that there are no correlations between the scoring-based variables and the budget variable, which means that the audience appreciation level is independent of the budget spent on the film!
+#
+# These ratings are slightly correlated to the gross profits of the films which suggests that customers choose to see big budget films a bit more than others, perhaps expecting a good experience. However, the lack of correlation between ratings and budget suggest that the audience is occasionally let down by a big budget film.
+#
+# There is little variation between the correlations of the total data versus those that Pass or Fail these 3 criteria. However, there are a few observable differences: e.g. domgross_2013 and budget_2013 are slightly less correlated if the criteria are not met (Fail) and slightly more correlated if the criteria are met. 
+# There is also a slightly lower correlation between film ratings/scores and gross profits of films if the criteria are met (Pass) than if they are not met (Fail).
+# 
+#This all means that there appears to be a modest but statistically significant relationship in movies and these criteria being met.
+
 ```
 
 ## Categorical variables
@@ -180,6 +209,11 @@ bechdel %>%
   group_by(rated, test) %>%
   summarise(n = n()) %>% 
   mutate(prop = n/sum(n))
+
+#
+# <Write a paragraph>
+#
+#
 ```
 
 # Train first models. `test ~ metascore + imdb_rating`
@@ -272,9 +306,11 @@ Run the code below. What does it return?
 ```{r}
 set.seed(123)
 bechdel_folds <- vfold_cv(data = bechdel_train, 
-                          v = 10, 
+                          v = 2, 
                           strata = test)
 bechdel_folds
+
+# This code returns the labelling of a 10-fold cross-validation.
 ```
 
 ## `fit_resamples()`
@@ -327,6 +363,7 @@ tree_preds %>%
   roc_curve(truth = test, .pred_Fail) %>% 
   autoplot()
 
+# The data for ROC show that the model is not very accurate at all, because the True Positive and True Negatives (matrix diagonal) in the confusion matrix are not very distinguished from the False Negatives and False Positives (off diagonals). Indeed, the results are barely above the dotted line (x = y) which would be the case for data from random guessing.
 ```
 
 # Build a better training set with `recipes`
@@ -349,6 +386,15 @@ tree_preds %>%
 ## Collapse Some Categorical Levels
 
 Do we have any `genre` with few observations? Assign genres that have less than 3% to a new category 'Other'
+
+```{r}
+bechdel %>% #reading in the full dataset
+  count(genre) %>% # looking at the distribution of genres
+  mutate(m = 100*n/sum(n)) %>% # calculating the genre proportion
+  filter (m < 3) # identifying the genres that appear less than 3 percent.
+#
+# The resulting table below identifies the six genre categories that make up less than 3 percent of the dataset.
+```
 
 ```{r}
 #| echo = FALSE
@@ -407,8 +453,21 @@ movie_rec
 
 What if there were no films with `rated` NC-17 in the training data?
 
+```{r}
+#Then, the model will not consider this NC-17 rating.
+```
+
 -   Will the model have a coefficient for `rated` NC-17?
+
+```{r}
+# The model will not have any coefficient for rated NC-17.
+```
+
 -   What will happen if the test data includes a film with `rated` NC-17?
+
+```{r}
+# The model will presumably ignore the rated NC-17 class of data.
+```
 
 ## `step_novel()`
 
@@ -460,8 +519,8 @@ movie_rec <- recipe(test ~ ., data = bechdel) %>%
   step_novel(all_nominal(), -all_outcomes()) %>% # Use *before* `step_dummy()` so new level is dummified
   step_dummy(all_nominal(), -all_outcomes()) %>% 
   step_zv(all_numeric(), -all_outcomes())  %>% 
-  step_normalize(all_numeric()) %>% 
-  step_corr(all_predictors(), threshold = 0.75, method = "spearman") 
+  step_normalize(all_numeric())  
+ # step_corr(all_predictors(), threshold = 0.75, method = "spearman") 
 
 
 
@@ -555,8 +614,24 @@ knn_wflow <-
 HEADS UP
 
 1.  How many models have you specified?
-2.  What's the difference between a model specification and a workflow?
-3.  Do you need to add a formula (e.g., `test ~ .`) if you have a recipe?
+
+```{r}
+#Five models have been specified in the above code run and these take the form of various types of classification: logistic regression (classification), a decision tree (tree), and various tree options: a random forest (rf), a booststrapping option: gradient boosting (xgb) and k-nearest neighbours (knn).
+```
+
+1.  What's the difference between a model specification and a workflow?
+
+```{r}
+#A model specification is essentially a function that one can use to apply unseen data that can fit well to the model if the data used to generate the function are similar to the unseen data. In this case, each model is a classifier which means that it partitions data into certain categories according to its relative fit to the underpinning model that was defined by the training data.
+
+#In contrast, a workflow is a sequence of steps or operations that lead to a result. In the workflows above, a model is contained within each of them.
+```
+
+1.  Do you need to add a formula (e.g., `test ~ .`) if you have a recipe?
+
+```{r}
+
+```
 
 # Model Comparison
 
@@ -564,6 +639,215 @@ You now have all your models. Adapt the code from slides `code-from-slides-CA-ho
 
 ```{r}
 
+## Evaluate Models
+
+## Logistic regression results{.smaller}
+
+log_res <- log_wflow %>% 
+  fit_resamples(
+    resamples = bechdel_folds, 
+    metrics = metric_set(
+      recall, precision, f_meas, accuracy,
+      kap, roc_auc, sens, spec),
+    control = control_resamples(save_pred = TRUE)) 
+
+# Show average performance over all folds (note that we use log_res):
+log_res %>%  collect_metrics(summarize = TRUE)
+
+# Show performance for every single fold:
+log_res %>%  collect_metrics(summarize = FALSE)
+
+
+
+## `collect_predictions()` and get confusion matrix{.smaller}
+
+log_pred <- log_res %>% collect_predictions()
+
+log_pred %>%  conf_mat(test, .pred_class) 
+
+log_pred %>% 
+  conf_mat(test, .pred_class) %>% 
+  autoplot(type = "mosaic") +
+  geom_label(aes(
+      x = (xmax + xmin) / 2, 
+      y = (ymax + ymin) / 2, 
+      label = c("TP", "FN", "FP", "TN")))
+
+
+log_pred %>% 
+  conf_mat(test, .pred_class) %>% 
+  autoplot(type = "heatmap")
+
+
+## ROC Curve
+
+log_pred %>% 
+  group_by(id) %>% # id contains our folds
+  roc_curve(test, .pred_Pass) %>% 
+  autoplot()
+
+
+## Decision Tree results
+
+tree_res <-
+  tree_wflow %>% 
+  fit_resamples(
+    resamples = bechdel_folds, 
+    metrics = metric_set(
+      recall, precision, f_meas, 
+      accuracy, kap,
+      roc_auc, sens, spec),
+    control = control_resamples(save_pred = TRUE)
+    ) 
+
+tree_res %>%  collect_metrics(summarize = TRUE)
+
+
+## Random Forest
+
+rf_res <-
+  rf_wflow %>% 
+  fit_resamples(
+    resamples = bechdel_folds, 
+    metrics = metric_set(
+      recall, precision, f_meas, 
+      accuracy, kap,
+      roc_auc, sens, spec),
+    control = control_resamples(save_pred = TRUE)
+    ) 
+
+rf_res %>%  collect_metrics(summarize = TRUE)
+
+## Boosted tree - XGBoost
+
+xgb_res <- 
+  xgb_wflow %>% 
+  fit_resamples(
+    resamples = bechdel_folds, 
+    metrics = metric_set(
+      recall, precision, f_meas, 
+      accuracy, kap,
+      roc_auc, sens, spec),
+    control = control_resamples(save_pred = TRUE)
+    ) 
+
+xgb_res %>% collect_metrics(summarize = TRUE)
+
+## K-nearest neighbour
+
+knn_res <- 
+  knn_wflow %>% 
+  fit_resamples(
+    resamples = bechdel_folds, 
+    metrics = metric_set(
+      recall, precision, f_meas, 
+      accuracy, kap,
+      roc_auc, sens, spec),
+    control = control_resamples(save_pred = TRUE)
+    ) 
+
+knn_res %>% collect_metrics(summarize = TRUE)
+
+
+## Model Comparison
+
+log_metrics <- 
+  log_res %>% 
+  collect_metrics(summarise = TRUE) %>%
+  # add the name of the model to every row
+  mutate(model = "Logistic Regression") 
+
+tree_metrics <- 
+  tree_res %>% 
+  collect_metrics(summarise = TRUE) %>%
+  mutate(model = "Decision Tree")
+
+rf_metrics <- 
+  rf_res %>% 
+  collect_metrics(summarise = TRUE) %>%
+  mutate(model = "Random Forest")
+
+xgb_metrics <- 
+  xgb_res %>% 
+  collect_metrics(summarise = TRUE) %>%
+  mutate(model = "XGBoost")
+
+knn_metrics <- 
+  knn_res %>% 
+  collect_metrics(summarise = TRUE) %>%
+  mutate(model = "Knn")
+
+# create dataframe with all models
+model_compare <- bind_rows(log_metrics,
+                           tree_metrics,
+                           rf_metrics,
+                           xgb_metrics,
+                           knn_metrics) 
+
+#Pivot wider to create barplot
+  model_comp <- model_compare %>% 
+  select(model, .metric, mean, std_err) %>% 
+  pivot_wider(names_from = .metric, values_from = c(mean, std_err)) 
+
+# show mean are under the curve (ROC-AUC) for every model
+model_comp %>% 
+  arrange(mean_roc_auc) %>% 
+  mutate(model = fct_reorder(model, mean_roc_auc)) %>% # order results
+  ggplot(aes(model, mean_roc_auc, fill=model)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_brewer(palette = "Blues") +
+   geom_text(
+     size = 3,
+     aes(label = round(mean_roc_auc, 2), 
+         y = mean_roc_auc + 0.08),
+     vjust = 1
+  )+
+  theme_light()+
+  theme(legend.position = "none")+
+  labs(y = NULL)
+
+## `last_fit()` on test set
+
+# - `last_fit()`  fits a model to the whole training data and evaluates it on the test set. 
+# - provide the workflow object of the best model as well as the data split object (not the training data). 
+ 
+last_fit_xgb <- last_fit(xgb_wflow, 
+                        split = data_split,
+                        metrics = metric_set(
+                          accuracy, f_meas, kap, precision,
+                          recall, roc_auc, sens, spec))
+
+last_fit_xgb %>% collect_metrics(summarize = TRUE)
+
+#Compare to training
+xgb_res %>% collect_metrics(summarize = TRUE)
+
+
+## Variable importance using `{vip}` package
+
+library(vip)
+
+last_fit_xgb %>% 
+  pluck(".workflow", 1) %>%   
+  pull_workflow_fit() %>% 
+  vip(num_features = 10) +
+  theme_light()
+
+
+## Final Confusion Matrix
+
+last_fit_xgb %>%
+  collect_predictions() %>% 
+  conf_mat(test, .pred_class) %>% 
+  autoplot(type = "heatmap")
+
+
+## Final ROC curve
+last_fit_xgb %>% 
+  collect_predictions() %>% 
+  roc_curve(test, .pred_Fail) %>% 
+  autoplot()
 ```
 
 # Deliverables
