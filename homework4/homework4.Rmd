@@ -211,9 +211,14 @@ bechdel %>%
   mutate(prop = n/sum(n))
 
 #
-# <Write a paragraph>
+# This output shows that a greater proportion of movies meet the #aforementioned
+# three criteria whatever the movie rating. However, the proportion differs depending upon the rating: whereby there are two ratings with notable differences between Pass/Fail:
+
+#a G rating shows a significantly higher proportion (62:38) of movies that fail these criteria; perhaps this is because many animations would fall into the G rating category which don't so often have gender specific characters portrayed. 
 #
+#a NC-17 rating whereby such movies are categorised as showing highly sexualised content. This has the highest (by some margin) disparity between proportions (83:17) of movies that fail the subject criteria. That said, this category contains the least number of movies (6 in total) so one could argue that the sample is too small; although 5:1 is still compelling given the distinctive categorisation of the movie rating and how this aligns with the female focused nature of the criteria.
 #
+#The other ratings have only a modest difference between Fail/Pass in the criteria with a representative (large) number of movies in the sample (the largest disparity amongst all 3 rating types (R, PG-13, PG)) being 56:44
 ```
 
 # Train first models. `test ~ metascore + imdb_rating`
@@ -306,7 +311,7 @@ Run the code below. What does it return?
 ```{r}
 set.seed(123)
 bechdel_folds <- vfold_cv(data = bechdel_train, 
-                          v = 2, 
+                          v = 10, 
                           strata = test)
 bechdel_folds
 
