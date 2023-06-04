@@ -89,27 +89,73 @@ payments %>%
 Is there any `entity` whose donations account for more than 5% of the total payments given to MPs over the 2020-2022 interval? Who are they and who did they give money to?
 
 ```{r}
-payments <-  dplyr::tbl(sky_westminster, "payments")
-payments %>% 
-  mutate(year = str_sub(date, -4)) %>%
-  filter(year >= 2020) %>%
-#  group_by(entity,value,member_id) %>%
-  count(entity,value,member_id) %>%
-#  summarise(tot=sum(value))
-  mutate(percent = 100*value*n/sum(n*value)) %>%
-  arrange(desc(percent)) 
-#  group_by(entity)
-#  group_by(entity,member_id) %>%
-  
 
+party_donations <-  dplyr::tbl(sky_westminster, "party_donations")
+parties <-  dplyr::tbl(sky_westminster, "parties")
+
+total_party_donations <- party_donations %>%   
+group_by(date,party_id) %>%   
+summarise(total_donations = sum(value, na.rm = TRUE)) %>%   
+ungroup() %>%
+arrange(desc(total_donations)) %>%   
+left_join(parties, by = c("party_id"="id")) %>%   
+collect() %>%   
+mutate(date = lubridate::ymd(date), #lubridate doesn't work on DB directly-- need to collect first         
+year = year(date)) %>%   
+group_by(year,name) %>%   
+  summarise(total_year_donations = sum(total_donations)) %>%   
+mutate(prop = 100*total_year_donations / sum(total_year_donations)) %>%   
+  ungroup() %>%
+  arrange(desc(prop)) 
+
+#This code generates a table called total_party_donations which has 1495 rows of 5 variables: year, name (the party), entity (the donor), the value (of donation) and its proportion of all donations. 
+#These results indicate that the donors listed in the top 88 rows donated more than 5%.
 ```
 
 ## Do `entity` donors give to a single party or not?
 
 -   How many distinct entities who paid money to MPS are there?
+
+```{r}
+
+```
+
 -   How many (as a number and %) donated to MPs belonging to a single party only?
 
 ## Which party has raised the greatest amount of money in each of the years 2020-2022?
+
+```{r}
+party_donations <-  dplyr::tbl(sky_westminster, "party_donations")
+parties <-  dplyr::tbl(sky_westminster, "parties")
+
+
+total_party_donations <- party_donations %>%   
+group_by(date, party_id) %>%   
+summarise(total_donations = sum(value, na.rm = TRUE)) %>%   
+ungroup() %>%
+arrange(desc(total_donations)) %>%   
+left_join(parties, by = c("party_id"="id")) %>%   
+collect() %>%   
+mutate(date = lubridate::ymd(date), #lubridate doesn't work on DB directly-- need to collect first         
+year = year(date)) %>%   
+group_by(year, name) %>%   
+summarise(total_year_donations = sum(total_donations)) %>%   
+mutate(prop = total_year_donations / sum(total_year_donations)) %>%   
+ungroup() %>%
+arrange(desc(prop))
+
+total_party_donations
+
+#This table shows that the conservative (C) party obtains the dominant portion of the donations, with labour (Lab) second and, depending on the year, the liberal democrats (LD), Sinn Fein (SF) , the Scottish National Party (SNP) are third with the combination of other parties (O) making up the rest. By year, this summarises as:
+
+#2020: C (61%), Lab (19%), LD (18%), O (2%)
+#2021: C (59%), Lab (32%), SF (3%), LD (2%), SNP (2%), O (2%)
+#2022: C (56%), Lab (34%), LD (6%), O (4%).
+
+#Thus, the conservative party progressively lost their donations from 2020-2022 while the labour party gained in this market share, while the liberal democrats lost nearly all support, only recovering slightly in 2022.
+
+
+```
 
 I would like you to write code that generates the following table.
 
@@ -117,10 +163,31 @@ I would like you to write code that generates the following table.
 knitr::include_graphics(here::here("images", "total_donations_table.png"), error = FALSE)
 ```
 
+```{r}
+#Now reordering the table in the manner requested by the question below to match that of total_donations_table.png in the images folder:
+
+total_party_donations[order(total_party_donations$year,total_party_donations$name), ]
+```
+
 ... and then, based on this data, plot the following graph.
 
 ```{r echo=FALSE, out.width="80%"}
 knitr::include_graphics(here::here("images", "total_donations_graph.png"), error = FALSE)
+```
+
+```{r}
+total_party_donations %>%
+  arrange(year) %>%
+    mutate(recode_name  = case_when(
+     name %in% c("Conservative") ~ "Conservative",
+     name %in% c("Labour") ~ "Labour",
+     name %in% c("Liberal Demoncrats") ~ "Liberal Democrats",
+     name %in% c("Sinn Féin") ~ "Sinn Féin",
+     name %in% c("Scottish National Party") ~ "Scottish National Party",
+     TRUE ~ "Other"
+   )) %>%
+  ggplot(mapping = aes(year, total_year_donations, fill = recode_name)) + geom_bar(stat = "identity", position = position_dodge(), alpha = 0.75) + labs(x = NULL, y = NULL, title = "Conservatives have captured the majority of political donations", subtitle = "Donations to political parties, 2020-2022", fill = NULL) 
+
 ```
 
 This uses the default ggplot colour pallete, as I dont want you to worry about using the [official colours for each party](https://en.wikipedia.org/wiki/Wikipedia:Index_of_United_Kingdom_political_parties_meta_attributes). However, I would like you to ensure the parties are sorted according to total donations and not alphabetically. You may even want to remove some of the smaller parties that hardly register on the graph. Would facetting help you?
@@ -432,7 +499,16 @@ jobtype <- listings_html %>%
 html_nodes(css = ".hide-tablet-landscape .row-link") %>%    
 html_text2()
   
-  return(job,firm,functionality,jobtype)
+jobs_df <- tibble(    # the first 'job' is the variable name, the second job after the equal sign is what you got from the CSS selector
+job = job,   
+firm = firm,    
+functionality = functionality, 
+ jobtype  = jobtype)       
+
+# we now have the tibble, so this is what the function should return
+return(jobs_df)
+
+#  return(job,firm,functionality,jobtype)
 }
 
 # iterate across pages 1-5
@@ -441,28 +517,14 @@ page <- 1:5
 # use purrr::map_df(), as we want the output to be a dataframe
 all_consulting_jobs <- map_df(page, get_listings)
 
-#Kostis : for some reason this function isn't working - it produces me the message:
-
-#Error in `map()`:
-#ℹ In index: 1.
-#Caused by error in `open.connection()`:
-#! HTTP error 404.
-#Backtrace:
-#  1. purrr::map_df(page, scrape_jobs)
-# 13. xml2:::read_html.default(.)
-# 17. xml2:::read_xml.character(...)
-# 18. xml2:::read_xml.connection(...)
-# 20. base::open.connection(x, "rb")
-#> all_consulting_jobs.csv <- map_df(page, scrape_jobs)
-
-# Now I just need to write the output in a csv format re: the question:
-
+# This works!! And produces a dataframe called all_consulting_jobs
+#
+# Now I just need to write the output in a csv format cf: the question:
 
 #Write the data frame to a csv file called all_consulting_jobs.csv in the data folder.
 
-# Kostis: Once I get the above function working can I complete this last question by simply replacing the last code line above with the following line?
-
-all_consulting_jobs.csv <- map_df(page, scrape_jobs)
+write.csv(all_consulting_jobs, "all_consulting_jobs.csv", row.names = FALSE)
+#all_consulting_jobs.csv <- map_df(page, scrape_jobs)
 
 
 ```
