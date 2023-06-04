@@ -1,8 +1,12 @@
 ---
-title: "Homework 3: Databases, web scraping, and a basic Shiny app"
+title: 'Homework 3: Databases, web scraping, and a basic Shiny app'
 author: "Jacqui Cole"
 date: "`r Sys.Date()`"
 output:
+  word_document:
+    toc: yes
+  pdf_document:
+    toc: yes
   html_document:
     theme: flatly
     highlight: zenburn
@@ -10,8 +14,6 @@ output:
     toc: yes
     toc_float: yes
     code_folding: show
-  pdf_document:
-    toc: yes
 ---
 
 ```{r}
@@ -176,6 +178,7 @@ knitr::include_graphics(here::here("images", "total_donations_graph.png"), error
 ```
 
 ```{r}
+library(scales)
 total_party_donations %>%
   arrange(year) %>%
     mutate(recode_name  = case_when(
@@ -186,7 +189,7 @@ total_party_donations %>%
      name %in% c("Scottish National Party") ~ "Scottish National Party",
      TRUE ~ "Other"
    )) %>%
-  ggplot(mapping = aes(year, total_year_donations, fill = recode_name)) + geom_bar(stat = "identity", position = position_dodge(), alpha = 0.75) + labs(x = NULL, y = NULL, title = "Conservatives have captured the majority of political donations", subtitle = "Donations to political parties, 2020-2022", fill = NULL) 
+  ggplot(mapping = aes(year, total_year_donations, fill = recode_name)) + geom_bar(stat = "identity", position = position_dodge(), alpha = 0.75) + labs(x = NULL, y = NULL, title = "Conservatives have captured the majority of political donations", subtitle = "Donations to political parties, 2020-2022", fill = "Party") + theme(plot.title = element_text(size=9),plot.subtitle = element_text(size=8)) + scale_y_continuous(labels = comma)
 
 ```
 
@@ -216,8 +219,14 @@ tic() # start timer
 cdc_data <- open_dataset(here::here("data", "cdc-covid-geography"))
 toc() # stop timer
 
-
-glimpse(cdc_data)
+#This dataset could be read in but my computer was out of memory when it tried to show a 'glimpse' of the data. So I have commented out the glimpse command below and I thus can't work on this dataset.
+#
+#FYI, the error that I obtain by using the command:
+#
+#glimpse(cdc_data)
+#
+# is : Error: Out of memory: realloc of size 268435456 failed 
+#
 ```
 
 Can you query the database and replicate the following plot?
@@ -306,16 +315,16 @@ parse_currency <- function(x){
 }
 
 # clean country/parent co and contributions 
-contributions <- contributions %>%
-  separate(country_of_origin_parent_company, 
-           into = c("country", "parent"), 
-           sep = "/", 
-           extra = "merge") %>%
-  mutate(
-    total = parse_currency(total),
-    dems = parse_currency(dems),
-    repubs = parse_currency(repubs)
-  )
+#contributions <- contributions %>%
+#  separate(country_of_origin_parent_company, 
+#           into = c("country", "parent"), 
+#           sep = "/", 
+#           extra = "merge") %>%
+#  mutate(
+#    total = parse_currency(total),
+#    dems = parse_currency(dems),
+#    repubs = parse_currency(repubs)
+#  )
 ```
 
 -   Write a function called `scrape_pac()` that scrapes information from the Open Secrets webpage for foreign-connected PAC contributions in a given year. This function should
