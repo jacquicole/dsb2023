@@ -375,31 +375,71 @@ page = c(1,2,3,4,5)
 url <- str_c(base_url, page)
 url
 
+job <- listings_html %>%    
+html_nodes(css = "span.title") %>%    
+html_text2()     
+
+firm <- listings_html %>%    
+html_nodes(css = ".hide-phone .row-link") %>%    
+html_text2()
+
+functionality <- listings_html %>%    
+html_nodes(css = ".hide-tablet-and-less .row-link") %>%    
+html_text2()
+
+jobtype <- listings_html %>%    
+html_nodes(css = ".hide-tablet-landscape .row-link") %>%    
+html_text2()
+
+job
+firm
+functionality
+jobtype
+
 # This has provided me a way to collect the five pages into one 'url'
 
 # Now I try to work on the creation of the actual function cf the question:
 
 #Map the scrape_jobs() function over pages in a way that will result in a data frame called all_consulting_jobs.
 
+
+#############################################################
+
 # turn our code into a function
-scrape_jobs <- function(page) {
+get_listings <- function(page) {
   
   base_url <- "https://www.consultancy.uk/jobs/page/"
   url <- str_c(base_url, page)
+  listings_html <- read_html(url) 
+#get_jobs <-  base_url %>%
+#  read_html() %>%
+#  html_nodes(css="table") %>% # this will isolate all tables on page
+#  html_table() # Parse an html table into a dataframe
+
+job <- listings_html %>%    
+html_nodes(css = "span.title") %>%    
+html_text2()     
+
+firm <- listings_html %>%    
+html_nodes(css = ".hide-phone .row-link") %>%    
+html_text2()
+
+functionality <- listings_html %>%    
+html_nodes(css = ".hide-tablet-and-less .row-link") %>%    
+html_text2()
+
+jobtype <- listings_html %>%    
+html_nodes(css = ".hide-tablet-landscape .row-link") %>%    
+html_text2()
   
-get_jobs <-  base_url %>%
-  read_html() %>%
-  html_nodes(css="table") %>% # this will isolate all tables on page
-  html_table() # Parse an html table into a dataframe
-  
-  return(get_jobs)
+  return(job,firm,functionality,jobtype)
 }
 
 # iterate across pages 1-5
 page <- 1:5
 
 # use purrr::map_df(), as we want the output to be a dataframe
-all_consulting_jobs <- map_df(page, scrape_jobs)
+all_consulting_jobs <- map_df(page, get_listings)
 
 #Kostis : for some reason this function isn't working - it produces me the message:
 
