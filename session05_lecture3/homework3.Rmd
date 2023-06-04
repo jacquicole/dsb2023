@@ -34,6 +34,7 @@ library(robotstxt) # check if we're allowed to scrape the data
 library(scales)
 library(sf)
 library(readxl)
+library(lubridate)
 ```
 
 # Money in UK politics
@@ -89,10 +90,18 @@ Is there any `entity` whose donations account for more than 5% of the total paym
 
 ```{r}
 payments <-  dplyr::tbl(sky_westminster, "payments")
-members <-  dplyr::tbl(sky_westminster, "members")
-payments %>%
-mutate(year = str_sub(date, -4)) %>%
-filter(year == "2022")
+payments %>% 
+  mutate(year = str_sub(date, -4)) %>%
+  filter(year >= 2020) %>%
+#  group_by(entity,value,member_id) %>%
+  count(entity,value,member_id) %>%
+#  summarise(tot=sum(value))
+  mutate(percent = 100*value*n/sum(n*value)) %>%
+  arrange(desc(percent)) 
+#  group_by(entity)
+#  group_by(entity,member_id) %>%
+  
+
 ```
 
 ## Do `entity` donors give to a single party or not?
@@ -280,7 +289,7 @@ Identify the CSS selectors in order to extract the relevant information from thi
 3.  functional area
 4.  type
 
-Can you get all pages of ads, and not just the first one, `https://www.consultancy.uk/jobs/page/1` into a dataframe?
+Can you get all pages of ads, and not just the first one, [`https://www.consultancy.uk/jobs/page/1`](https://www.consultancy.uk/jobs/page/1) into a dataframe?
 
 -   Write a function called `scrape_jobs()` that scrapes information from the webpage for consulting positions. This function should
 
@@ -300,6 +309,177 @@ url <- str_c(base_url, page)
 -   Map the `scrape_jobs()` function over `pages` in a way that will result in a data frame called `all_consulting_jobs`.
 
 -   Write the data frame to a csv file called `all_consulting_jobs.csv` in the `data` folder.
+
+```{r}
+# Initial test work to develop the underpinning code ideas towards the function development:- working through the first two questions:
+
+#This function will have one input: the URL of the webpage and should return a data frame with four columns (variables): job, firm, functional area, and type
+
+#Test your function works with other pages too, e.g., https://www.consultancy.uk/jobs/page/2. Does the function seem to do what you expected it to do?
+
+# I tackle the above two questions in one set of code, whereby I input all 5 pages of the website tabular information sequentially:
+
+base_url1 <- "https://www.consultancy.uk/jobs/page/1"
+base_url2 <- "https://www.consultancy.uk/jobs/page/2"
+base_url3 <- "https://www.consultancy.uk/jobs/page/3"
+base_url4 <- "https://www.consultancy.uk/jobs/page/4"
+base_url5 <- "https://www.consultancy.uk/jobs/page/5"
+
+
+# I then isolate all (in this case 1) table on each of the five pages and parse each table into a dataframe
+
+table1 <- base_url1 %>%
+  read_html() %>%
+  html_nodes(css="table") %>% # this will isolate all tables on page
+  html_table() # Parse an html table into a dataframe
+
+table2 <- base_url2 %>%
+  read_html() %>%
+  html_nodes(css="table") %>% # this will isolate all tables on page
+  html_table() # Parse an html table into a dataframe
+
+table3 <- base_url3 %>%
+  read_html() %>%
+  html_nodes(css="table") %>% # this will isolate all tables on page
+  html_table() # Parse an html table into a dataframe
+
+table4 <- base_url4 %>%
+  read_html() %>%
+  html_nodes(css="table") %>% # this will isolate all tables on page
+  html_table() # Parse an html table into a dataframe
+
+table5 <- base_url5 %>%
+  read_html() %>%
+  html_nodes(css="table") %>% # this will isolate all tables on page
+  html_table() # Parse an html table into a dataframe
+
+#This produces 5 dataframes of the five tables from the 5 pages:
+
+table1
+table2
+table3
+table4
+table5
+
+# Now I develop the more sophisticated approach with the next two questions:
+
+#Given that you have to scrape ...jobs/page/1, ...jobs/page/2, etc., define your URL so you can join multiple stings into one string, using str_c(). For instnace, if page is 5, what do you expect the following code to produce?
+
+#base_url <- "https://www.consultancy.uk/jobs/page/1"
+#url <- str_c(base_url, page)
+
+#Construct a vector called pages that contains the numbers for each page available
+
+base_url <- "https://www.consultancy.uk/jobs/page/"
+page = c(1,2,3,4,5)
+url <- str_c(base_url, page)
+url
+
+# This has provided me a way to collect the five pages into one 'url'
+
+# Now I try to work on the creation of the actual function cf the question:
+
+#Map the scrape_jobs() function over pages in a way that will result in a data frame called all_consulting_jobs.
+
+# turn our code into a function
+scrape_jobs <- function(page) {
+  
+  base_url <- "https://www.consultancy.uk/jobs/page/"
+  url <- str_c(base_url, page)
+  
+get_jobs <-  base_url %>%
+  read_html() %>%
+  html_nodes(css="table") %>% # this will isolate all tables on page
+  html_table() # Parse an html table into a dataframe
+  
+  return(get_jobs)
+}
+
+# iterate across pages 1-5
+page <- 1:5
+
+# use purrr::map_df(), as we want the output to be a dataframe
+all_consulting_jobs <- map_df(page, scrape_jobs)
+
+#Kostis : for some reason this function isn't working - it produces me the message:
+
+#Error in `map()`:
+#ℹ In index: 1.
+#Caused by error in `open.connection()`:
+#! HTTP error 404.
+#Backtrace:
+#  1. purrr::map_df(page, scrape_jobs)
+# 13. xml2:::read_html.default(.)
+# 17. xml2:::read_xml.character(...)
+# 18. xml2:::read_xml.connection(...)
+# 20. base::open.connection(x, "rb")
+#> all_consulting_jobs.csv <- map_df(page, scrape_jobs)
+
+# Now I just need to write the output in a csv format re: the question:
+
+
+#Write the data frame to a csv file called all_consulting_jobs.csv in the data folder.
+
+# Kostis: Once I get the above function working can I complete this last question by simply replacing the last code line above with the following line?
+
+all_consulting_jobs.csv <- map_df(page, scrape_jobs)
+
+
+
+
+
+## Find `a` (anchor) elements
+
+
+html_element("#dataTable")
+html_table()
+
+
+## Now adding the CSS selector information that I found above using Right click and `inpect` to find the CSS selector for the information.
+
+# with Chrome
+jobs <- listings_html %>%
+  html_elements(css = "#vacaturenaam") %>%
+  html_table()
+
+jobs 
+
+firm <- listings_html %>%
+  html_elements(css = "#bedrijf") %>%
+  html_table()
+
+firm
+
+functionality <- listings_html %>%
+  html_elements(css = "#dataTable > tbody > tr:nth-child(1) > th.hide-tablet-and-less") %>%
+  html_table()
+
+functionality
+
+jobtype <- listings_html %>%
+  html_elements(css = "#dataTable > tbody > tr:nth-child(1) > th.hide-tablet-landscape") %>%
+  html_table()
+
+jobtype
+
+
+## Store scraped fields in a data frame{.smaller}
+
+jobs
+firm
+functionality
+jobtype
+
+
+# store in a data frame
+url_data <- tibble(
+  jobs = jobs,
+  firm = firm,
+  functionality = functionality,
+  jobtype = jobtype
+)
+
+```
 
 # Create a shiny app - OPTIONAL
 
