@@ -307,10 +307,14 @@ contributions_tables <- base_url %>%
 
       ## Use `tables[[1]]` to parse the first table (for 2022)
     contributions <-  tables[[1]] %>%   
-    janitor::clean_names()     #default option is snake_case
-    #
-    #This converts the table headers into snake_case e.g. pac_name_affiliate
+    janitor::clean_names()    #default option is snake_case
 
+      #
+    #This converts the table headers into snake_case e.g. pac_name_affiliate
+    #
+    #Add a year column (for later)
+    #
+    #mutate(year=year)
     ```
 
 -   Clean the data:
@@ -360,39 +364,40 @@ contributions <- contributions %>%
 -   Write the data frame to a csv file called `contributions-all.csv` in the `data` folder.
 
     ```{r}
-    Total
-    Dems
-    Repubs
     #
     # turn the code into a function
-    #get_listings <- function(year) {
-      
+    scrape_pac <- function(year) {
+
       base_url <- "https://www.opensecrets.org/political-action-committees-pacs/foreign-connected-pacs/"
-      url <- str_c(base_url, year)
+      url <- str_c(base_url,year)
       listings_html <- read_html(url) 
 
     tables <- url %>%# get tables that exist on url  
     read_html() %>%  
     html_nodes(css="table") %>% # this will isolate all tables on page  
     html_table() # Parse an html table into a dataframe table
+    #mutate(year=year) %>%
+    #  contributions <-  tables %>%   
+    #  mutate(year = year)
 
-    #table <- base_url %>%
-    #  read_html() %>%
-    #  html_nodes(css="table") %>% # this will isolate all tables on page
-    #  html_table() # Parse an html table into a dataframe
+    #Your function should again return a tibble/dataframe 'contributions'
 
-    ## Use `tables[[1]]` to get first table
-    contributions <-  tables[[1]] %>%   
-    janitor::clean_names()  %>%     
-    #add a new column with the year  
-    mutate(year=year)
+    opensecrets_df <- tibble(    # the first 'job' is the variable name, the second job after the equal sign is what you got from the CSS selector
+    pac_name_affiliate = pac_name_affiliate,   
+    country = country,    
+    parent = parent, 
+    total = total,
+    dems = dems,
+    repubs = repubs,
+    year = year) 
 
-    Your function should again return a tibble/dataframe 'contributions'
+    return(opensecrets_df)
+    }
 
-    Once you have your function, the magic is done with two lines of code
+    #Once you have your function, the magic is done with two lines of code
 
-    years <- seq(from=2000, to=2022, by=2) 
-    contributions_all <- map_df(years, scrape_pac)
+    year <- seq(from=2000, to=2022, by=2) 
+    contributions_all <- map_df(year,scrape_pac)
 
     ```
 
@@ -573,7 +578,6 @@ functionality = functionality,
 # we now have the tibble, so this is what the function should return
 return(jobs_df)
 
-#  return(job,firm,functionality,jobtype)
 }
 
 # iterate across pages 1-5
