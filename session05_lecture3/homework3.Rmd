@@ -425,60 +425,6 @@ all_consulting_jobs <- map_df(page, scrape_jobs)
 all_consulting_jobs.csv <- map_df(page, scrape_jobs)
 
 
-
-
-
-## Find `a` (anchor) elements
-
-
-html_element("#dataTable")
-html_table()
-
-
-## Now adding the CSS selector information that I found above using Right click and `inpect` to find the CSS selector for the information.
-
-# with Chrome
-jobs <- listings_html %>%
-  html_elements(css = "#vacaturenaam") %>%
-  html_table()
-
-jobs 
-
-firm <- listings_html %>%
-  html_elements(css = "#bedrijf") %>%
-  html_table()
-
-firm
-
-functionality <- listings_html %>%
-  html_elements(css = "#dataTable > tbody > tr:nth-child(1) > th.hide-tablet-and-less") %>%
-  html_table()
-
-functionality
-
-jobtype <- listings_html %>%
-  html_elements(css = "#dataTable > tbody > tr:nth-child(1) > th.hide-tablet-landscape") %>%
-  html_table()
-
-jobtype
-
-
-## Store scraped fields in a data frame{.smaller}
-
-jobs
-firm
-functionality
-jobtype
-
-
-# store in a data frame
-url_data <- tibble(
-  jobs = jobs,
-  firm = firm,
-  functionality = functionality,
-  jobtype = jobtype
-)
-
 ```
 
 # Create a shiny app - OPTIONAL
