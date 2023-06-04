@@ -294,6 +294,25 @@ contributions_tables <- base_url %>%
 
 -   First, make sure you can scrape the data for 2022. Use janitor::clean_names() to rename variables scraped using `snake_case` naming.
 
+    ```{r}
+    #
+       base_url <- "https://www.opensecrets.org/political-action-committees-pacs/foreign-connected-pacs/2022"
+
+    #  listings_html <- read_html(url) 
+
+      tables <- base_url %>%# get tables that exist on url  
+      read_html() %>%  
+      html_nodes(css="table") %>% # this will isolate all tables on page  
+      html_table() # Parse an html table into a dataframe table
+
+      ## Use `tables[[1]]` to parse the first table (for 2022)
+    contributions <-  tables[[1]] %>%   
+    janitor::clean_names()     #default option is snake_case
+    #
+    #This converts the table headers into snake_case e.g. pac_name_affiliate
+
+    ```
+
 -   Clean the data:
 
     -   Write a function that converts contribution amounts in `total`, `dems`, and `repubs` from character strings to numeric values.
@@ -315,16 +334,16 @@ parse_currency <- function(x){
 }
 
 # clean country/parent co and contributions 
-#contributions <- contributions %>%
-#  separate(country_of_origin_parent_company, 
-#           into = c("country", "parent"), 
-#           sep = "/", 
-#           extra = "merge") %>%
-#  mutate(
-#    total = parse_currency(total),
-#    dems = parse_currency(dems),
-#    repubs = parse_currency(repubs)
-#  )
+contributions <- contributions %>%
+  separate(country_of_origin_parent_company, 
+           into = c("country", "parent"), 
+           sep = "/", 
+           extra = "merge") %>%
+  mutate(
+    total = parse_currency(total),
+    dems = parse_currency(dems),
+    repubs = parse_currency(repubs)
+  )
 ```
 
 -   Write a function called `scrape_pac()` that scrapes information from the Open Secrets webpage for foreign-connected PAC contributions in a given year. This function should
@@ -339,6 +358,43 @@ parse_currency <- function(x){
 -   Map the `scrape_pac()` function over `urls` in a way that will result in a data frame called `contributions_all`.
 
 -   Write the data frame to a csv file called `contributions-all.csv` in the `data` folder.
+
+    ```{r}
+    Total
+    Dems
+    Repubs
+    #
+    # turn the code into a function
+    #get_listings <- function(year) {
+      
+      base_url <- "https://www.opensecrets.org/political-action-committees-pacs/foreign-connected-pacs/"
+      url <- str_c(base_url, year)
+      listings_html <- read_html(url) 
+
+    tables <- url %>%# get tables that exist on url  
+    read_html() %>%  
+    html_nodes(css="table") %>% # this will isolate all tables on page  
+    html_table() # Parse an html table into a dataframe table
+
+    #table <- base_url %>%
+    #  read_html() %>%
+    #  html_nodes(css="table") %>% # this will isolate all tables on page
+    #  html_table() # Parse an html table into a dataframe
+
+    ## Use `tables[[1]]` to get first table
+    contributions <-  tables[[1]] %>%   
+    janitor::clean_names()  %>%     
+    #add a new column with the year  
+    mutate(year=year)
+
+    Your function should again return a tibble/dataframe 'contributions'
+
+    Once you have your function, the magic is done with two lines of code
+
+    years <- seq(from=2000, to=2022, by=2) 
+    contributions_all <- map_df(years, scrape_pac)
+
+    ```
 
 # Scraping consulting jobs
 
