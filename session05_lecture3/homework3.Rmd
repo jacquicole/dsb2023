@@ -95,52 +95,52 @@ payments %>%
 Is there any `entity` whose donations account for more than 5% of the total payments given to MPs over the 2020-2022 interval? Who are they and who did they give money to?
 
 ```{r}
+# Read in the relevant tables as dataframes
+
 payments <-  dplyr::tbl(sky_westminster, "payments")
 members <-  dplyr::tbl(sky_westminster, "members")
 
-payments %>% 
-  mutate(year = str_sub(date, -4)) %>%
-  filter(year >= 2020) %>%
-#  group_by(member_id) %>%
-    count(value) %>%
-#  count(entity,value,member_id) %>%
-  mutate(percent = 100*value*n/sum(n*value)) %>%
-  arrange(desc(percent)) 
-  #
+#First define and apply the range of year restriction
 
-# I can't quite work out what code I'm missing here; should I be grouping and ungrouping somehow? The output shows two entries that are greater than 5% of the total payments, and so I want to relate this to the entity and the member_id and then left_join with the code below to see which entity correlates with which MP for these two entries. However, the momemt that I count on value I lose the remaining column info; meanwhile, if I include other variables in the count, then n represents something different; meanwhile, if I group_by then that doesn't appear to be working out either. There is a bit of a problem with an entity when I group_by that variable as well. Advice?
-
-
-
-#  left_join(members, by = c("member_id" = "id")) %>% #joint payments and members with the common MP id to resolve the identity of the MPs.
-
-#
-#      left_join(prop, by = "value") %>%
-#    glimpse
+payments %>%
   
-#    mutate(date  = case_when(
-#     date %in% c("Registered") ~ "Registered",
-#          TRUE ~ "NA"
-#   )) %>%
-#  remove(na.rm = TRUE) %>%
-#prop <-  mutate(year = str_sub(date, -4)) %>%
-#  filter(year >= 2020) %>%
-#  count(value) %>%
-#  mutate(percent = 100*value*n/sum(n*value)) %>%
-#  arrange(desc(percent)) %>%
+#capture the last 4 chars of the date variable as these contain the year in xxxx format. 
+  
+  mutate(year = str_sub(date, -4)) %>% 
+  
+#specify the year range 2020-2022 (note that the years only go up to 2022 so this is all that is necessary)  
+  
+  filter(year >= 2020) %>% 
+  
+#Now calculate the total value of all payments from entity (donor) to  member_ids (MPs). One needs to group and then ungroup so that this does not restrict the code that follows.
+  
+  group_by(entity,member_id) %>% 
+  summarise(total = sum(value)) %>%
+  ungroup %>%
 
-#        select(entity,percent,member_id)
+#Now resolve the identity of the member_id by joining to the dataframe for members which contains the name of the MPs which we can link to their id which is equivalent to member_id in the dataframe for payments.
   
-#  glimpse
-#%>%
-#  group_by(entity,value,member_id) %>%
-#  count(entity,value,member_id) %>%
-#  summarise(tot=sum(value))
-#  mutate(percent = 100*value*n/sum(n*value)) %>%
-#  arrange(desc(percent)) 
-#  group_by(entity)
-#  group_by(entity,member_id) %>%
+  left_join(members, by = c("member_id" = "id")) %>%
+
+#Now arrange the values in descending order and collect to that one can see if any donors have given more than 5 percent of the total payments.
   
+    arrange(desc(total)) %>%
+  collect() %>%
+
+#Remove two rogue rows of data that contain errors.  
+
+  filter(!str_detect(entity, 'Country Foods'))  %>%
+  filter(!str_detect(entity, 'George Watson'))  %>%
+
+#Calculate the percentage mentioned above.
+  
+  mutate(percent=round(100*total/sum(total),digits=2)) %>%
+  
+#Select the columns of interest and show the results in a table.  
+
+  select(entity,name,party_id,total,percent)
+
+# The results in the table reveal that one entity accounts for more than 5 percent of all donations. The entity in question is WithersLLP who donate to the Conservative MP (party_id = p4), Sir Geoffrey Cox (name) a total value of 1,812,731.81 which is 5.26 percent of the total amount of donations.
 
 ```
 
@@ -184,12 +184,55 @@ payments %>%
       glimpse
 
     # This puts together the three key columns that need to be compared which are entity and abbrev and member_id. Now we can calculate how many entity donate to MPs belonging to only a single party:
+    #
+    # First, we determine how many party_id and abbrev
+    #
+    parmempay %>%
+          summarise(Unique_Elements = n_distinct(party_id)) # Now     
+    #     summarise with unique elements 
 
     parmempay %>%
-      summarise(Unique_Elements = n_distinct(entity)) # Now summarise with unique elements 
-      summarise(percentsingle = 100*entitysingle/Unique_Elements)
-    payments %>%
-      summarise(Unique_Elements = n_distinct(member_id)) # Now summarise with unique elements 
+          summarise(Unique_Elements = n_distinct(member_id)) # Now     
+    #     summarise with unique elements 
+
+    #These results show that there are only 13 distinct party_ids and only 13 distinct parties. Since each member_id has a particular party_id, and we expect an MP to be a member of only one party, this makes sense. But are the donors less loyal to a party than their MP?
+
+    parmempay %>%
+      collect() %>%
+      filter(!str_detect(entity, 'Andrew Taylor'))  %>%
+      filter(!str_detect(entity, 'Le Manoir aux Quat'))  %>%
+      select(entity,member_id,abbrev) %>%
+      group_by(entity,member_id,abbrev) %>%
+      ungroup %>%
+      group_by(member_id,abbrev) %>% #proof that MPs stick to one party
+      ungroup %>%
+      group_by(entity,abbrev) %>%
+      ungroup %>%
+      group_by(entity)
+    #
+    # This shows that there are:
+    #
+    # 10,537 total rows of entity, member_id, abbrev
+    # 4090 distinct combinations of entity, member_id, abbrev
+    # 595 distinct combinations of member_id and abbrev
+    # 2467 entity distinct combinations of abbrev rows
+    # 2211 rows of entity values (in the previous question, we determined this value to be 2213 which is consistent with this new value when we consider that we removed two rows of data from the dataframe parmempay to overcome a few errors in data entry).
+    #
+    # These all show that all MPs are entirey loyal to one party (there are 595 distinct MPs and 595 combinations of MPs and Party categories, so this proves that there is a one-to-one mapping between them).
+    #
+    # But are donors to MPs as loyal to a party?
+    #
+    # It would seem that they are largely so, but not entirely so, because there are more mappings of donors (entity) to party names (abbrev) than there are distinct donors (entity) to the tune of:
+    #2467-2211 = 256 (regarding the two entries that were filtered out owing to errors, I checked manually the cases of Andrew Taylor and Le Manoir aux Quat and they were found to be loyal to one party).
+    #
+    # The numer of entity that donated to a single party can thus be calculated to be:
+    # 
+    # 2213
+    #
+    # which is a percentage:
+    #
+    # (2213/2467)*100 = 89.7 percent of donors are loyal to a single party in making their donations.
+
     ```
 
 ## Which party has raised the greatest amount of money in each of the years 2020-2022?
