@@ -298,8 +298,6 @@ contributions_tables <- base_url %>%
     #
        base_url <- "https://www.opensecrets.org/political-action-committees-pacs/foreign-connected-pacs/2022"
 
-    #  listings_html <- read_html(url) 
-
       tables <- base_url %>%# get tables that exist on url  
       read_html() %>%  
       html_nodes(css="table") %>% # this will isolate all tables on page  
@@ -307,8 +305,9 @@ contributions_tables <- base_url %>%
 
       ## Use `tables[[1]]` to parse the first table (for 2022)
     contributions <-  tables[[1]] %>%   
-    janitor::clean_names()    #default option is snake_case
-
+    janitor::clean_names() #%>%    #default option is snake_case
+    #data.frame(years = years(1:215))
+    #mutate(newCol(1:215) = year)
       #
     #This converts the table headers into snake_case e.g. pac_name_affiliate
     #
@@ -364,25 +363,60 @@ contributions <- contributions %>%
 -   Write the data frame to a csv file called `contributions-all.csv` in the `data` folder.
 
     ```{r}
+
+    # I did this question after the consultancyjobs question and so
+    # I did my initial code developments that built up this type of 
+    # problem therein; see my working in that question that led to the
+    # ultimate function. I have now done this question in a similar
+    # style, so I have not repeated the description of the initial 
+    # development work, although those developments and testing are
+    # implicit to the final code below. Thereby:
     #
     # turn the code into a function
     scrape_pac <- function(year) {
 
       base_url <- "https://www.opensecrets.org/political-action-committees-pacs/foreign-connected-pacs/"
       url <- str_c(base_url,year)
-      listings_html <- read_html(url) 
+    #  listings_html <- read_html(url) 
 
     tables <- url %>%# get tables that exist on url  
     read_html() %>%  
     html_nodes(css="table") %>% # this will isolate all tables on page  
     html_table() # Parse an html table into a dataframe table
-    #mutate(year=year) %>%
-    #  contributions <-  tables %>%   
-    #  mutate(year = year)
+
+    contributions <-  tables[[1]] %>%   
+    janitor::clean_names() %>%     #default option is snake_case
+    mutate(year=year)
+
+    # write a function to parse_currency
+    parse_currency <- function(x){
+      x %>%
+        
+        # remove dollar signs
+        str_remove("\\$") %>%
+        
+        # remove all occurrences of commas
+        str_remove_all(",") %>%
+        
+        # convert to numeric
+        as.numeric()
+    }
+
+    # clean country/parent co and contributions 
+    contributions <- contributions %>%
+      separate(country_of_origin_parent_company, 
+               into = c("country", "parent"), 
+               sep = "/", 
+               extra = "merge") %>%
+      mutate(
+        total = parse_currency(total),
+        dems = parse_currency(dems),
+        repubs = parse_currency(repubs)
+      )
 
     #Your function should again return a tibble/dataframe 'contributions'
 
-    opensecrets_df <- tibble(    # the first 'job' is the variable name, the second job after the equal sign is what you got from the CSS selector
+    contributions <- tibble(    # the first 'job' is the variable name, the second job after the equal sign is what you got from the CSS selector
     pac_name_affiliate = pac_name_affiliate,   
     country = country,    
     parent = parent, 
@@ -391,13 +425,15 @@ contributions <- contributions %>%
     repubs = repubs,
     year = year) 
 
-    return(opensecrets_df)
+    return(contributions)
     }
 
-    #Once you have your function, the magic is done with two lines of code
+    #Now that I have this function, I define year elements and map this function to the desired output
 
     year <- seq(from=2000, to=2022, by=2) 
     contributions_all <- map_df(year,scrape_pac)
+
+    write.csv(contributions_all, "contributions_all.csv", row.names = FALSE)
 
     ```
 
@@ -593,7 +629,7 @@ all_consulting_jobs <- map_df(page, get_listings)
 #Write the data frame to a csv file called all_consulting_jobs.csv in the data folder.
 
 write.csv(all_consulting_jobs, "all_consulting_jobs.csv", row.names = FALSE)
-#all_consulting_jobs.csv <- map_df(page, scrape_jobs)
+
 
 
 ```
