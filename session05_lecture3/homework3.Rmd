@@ -73,15 +73,19 @@ DBI::dbListTables(sky_westminster)
 You need to work with the `payments` and `members` tables and for now we just want the total among all years. To insert a new, blank chunk of code where you can write your beautiful code (and comments!), please use the following shortcut: `Ctrl + Alt + I` (Windows) or `cmd + option + I` (mac)
 
 ```{r}
+# Read in the relevant tables as dataframes
+
 payments <-  dplyr::tbl(sky_westminster, "payments")
 members <-  dplyr::tbl(sky_westminster, "members")
 parties <-  dplyr::tbl(sky_westminster, "parties")
 
+#calculate which MP has received the most money
+
 payments %>% 
   group_by(member_id) %>%
   summarise(maxvalue = sum(value)) %>%
-  left_join(members, by = c("member_id" = "id")) %>%
-  arrange(desc(maxvalue))
+  left_join(members, by = c("member_id" = "id")) %>% #joint payments and members with the common MP id to resolve the identity of the MPs.
+  arrange(desc(maxvalue)) # arrange dataframe in descending value.
 
 # The MP to receive the most money is now in the top row of the resulting table, i.e. it is Teresa May who receives £2809765.42.
 ```
@@ -91,27 +95,53 @@ payments %>%
 Is there any `entity` whose donations account for more than 5% of the total payments given to MPs over the 2020-2022 interval? Who are they and who did they give money to?
 
 ```{r}
+payments <-  dplyr::tbl(sky_westminster, "payments")
+members <-  dplyr::tbl(sky_westminster, "members")
 
-party_donations <-  dplyr::tbl(sky_westminster, "party_donations")
-parties <-  dplyr::tbl(sky_westminster, "parties")
+payments %>% 
+  mutate(year = str_sub(date, -4)) %>%
+  filter(year >= 2020) %>%
+#  group_by(member_id) %>%
+    count(value) %>%
+#  count(entity,value,member_id) %>%
+  mutate(percent = 100*value*n/sum(n*value)) %>%
+  arrange(desc(percent)) 
+  #
 
-total_party_donations <- party_donations %>%   
-group_by(date,party_id) %>%   
-summarise(total_donations = sum(value, na.rm = TRUE)) %>%   
-ungroup() %>%
-arrange(desc(total_donations)) %>%   
-left_join(parties, by = c("party_id"="id")) %>%   
-collect() %>%   
-mutate(date = lubridate::ymd(date), #lubridate doesn't work on DB directly-- need to collect first         
-year = year(date)) %>%   
-group_by(year,name) %>%   
-  summarise(total_year_donations = sum(total_donations)) %>%   
-mutate(prop = 100*total_year_donations / sum(total_year_donations)) %>%   
-  ungroup() %>%
-  arrange(desc(prop)) 
+# I can't quite work out what code I'm missing here; should I be grouping and ungrouping somehow? The output shows two entries that are greater than 5% of the total payments, and so I want to relate this to the entity and the member_id and then left_join with the code below to see which entity correlates with which MP for these two entries. However, the momemt that I count on value I lose the remaining column info; meanwhile, if I include other variables in the count, then n represents something different; meanwhile, if I group_by then that doesn't appear to be working out either. There is a bit of a problem with an entity when I group_by that variable as well. Advice?
 
-#This code generates a table called total_party_donations which has 1495 rows of 5 variables: year, name (the party), entity (the donor), the value (of donation) and its proportion of all donations. 
-#These results indicate that the donors listed in the top 88 rows donated more than 5%.
+
+
+#  left_join(members, by = c("member_id" = "id")) %>% #joint payments and members with the common MP id to resolve the identity of the MPs.
+
+#
+#      left_join(prop, by = "value") %>%
+#    glimpse
+  
+#    mutate(date  = case_when(
+#     date %in% c("Registered") ~ "Registered",
+#          TRUE ~ "NA"
+#   )) %>%
+#  remove(na.rm = TRUE) %>%
+#prop <-  mutate(year = str_sub(date, -4)) %>%
+#  filter(year >= 2020) %>%
+#  count(value) %>%
+#  mutate(percent = 100*value*n/sum(n*value)) %>%
+#  arrange(desc(percent)) %>%
+
+#        select(entity,percent,member_id)
+  
+#  glimpse
+#%>%
+#  group_by(entity,value,member_id) %>%
+#  count(entity,value,member_id) %>%
+#  summarise(tot=sum(value))
+#  mutate(percent = 100*value*n/sum(n*value)) %>%
+#  arrange(desc(percent)) 
+#  group_by(entity)
+#  group_by(entity,member_id) %>%
+  
+
 ```
 
 ## Do `entity` donors give to a single party or not?
