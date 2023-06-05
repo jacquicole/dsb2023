@@ -418,20 +418,6 @@ contributions <- contributions %>%
     janitor::clean_names() %>%     #default option is snake_case
     mutate(year=year)
 
-    # write a function to parse_currency
-    parse_currency <- function(x){
-      x %>%
-        
-        # remove dollar signs
-        str_remove("\\$") %>%
-        
-        # remove all occurrences of commas
-        str_remove_all(",") %>%
-        
-        # convert to numeric
-        as.numeric()
-    }
-
     # clean country/parent co and contributions 
     contributions <- contributions %>%
       separate(country_of_origin_parent_company, 
@@ -444,16 +430,6 @@ contributions <- contributions %>%
         repubs = parse_currency(repubs)
       )
 
-    #Your function should again return a tibble/dataframe 'contributions'
-
-    contributions <- tibble(    # the first 'job' is the variable name, the second job after the equal sign is what you got from the CSS selector
-    pac_name_affiliate = pac_name_affiliate,   
-    country = country,    
-    parent = parent, 
-    total = total,
-    dems = dems,
-    repubs = repubs,
-    year = year) 
 
     return(contributions)
     }
