@@ -149,10 +149,48 @@ payments %>%
 -   How many distinct entities who paid money to MPS are there?
 
 ```{r}
+payments <-  dplyr::tbl(sky_westminster, "payments")
 
+payments %>%
+  summarise(Unique_Elements = n_distinct(entity)) # Now summarise with unique elements 
+
+payments %>%
+  summarise(Unique_Elements = n_distinct(member_id)) # Now summarise with unique elements 
+
+
+#These results indicate that there are 2213 distinct entity (donors) and only 595 distinct member_id (MPs).
 ```
 
 -   How many (as a number and %) donated to MPs belonging to a single party only?
+
+    ```{r}
+    # First convert the database tables into dataframes
+
+    payments <-  dplyr::tbl(sky_westminster, "payments")
+    parties <-  dplyr::tbl(sky_westminster, "parties")
+    members <-  dplyr::tbl(sky_westminster, "members")
+
+    # Then stitch together the columns of three dataframes where they are sequentially joined by the id of the MP or party name. 
+
+    mempay <- payments %>%
+      left_join(members, by = c("member_id" = "id")) 
+
+    parmempay <- mempay %>%
+      left_join(parties, by = c("party_id" = "id"))
+
+    # Checking the result:
+
+    parmempay %>%
+      glimpse
+
+    # This puts together the three key columns that need to be compared which are entity and abbrev and member_id. Now we can calculate how many entity donate to MPs belonging to only a single party:
+
+    parmempay %>%
+      summarise(Unique_Elements = n_distinct(entity)) # Now summarise with unique elements 
+      summarise(percentsingle = 100*entitysingle/Unique_Elements)
+    payments %>%
+      summarise(Unique_Elements = n_distinct(member_id)) # Now summarise with unique elements 
+    ```
 
 ## Which party has raised the greatest amount of money in each of the years 2020-2022?
 
