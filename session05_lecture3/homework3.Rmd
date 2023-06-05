@@ -149,6 +149,8 @@ payments %>%
 -   How many distinct entities who paid money to MPS are there?
 
 ```{r}
+#Read in the relevant data table into a dataframe
+
 payments <-  dplyr::tbl(sky_westminster, "payments")
 
 payments %>%
@@ -185,7 +187,7 @@ payments %>%
 
     # This puts together the three key columns that need to be compared which are entity and abbrev and member_id. Now we can calculate how many entity donate to MPs belonging to only a single party:
     #
-    # First, we determine how many party_id and abbrev
+    # First, we determine how many party_id and abbrev are distinct:
     #
     parmempay %>%
           summarise(Unique_Elements = n_distinct(party_id)) # Now     
@@ -195,22 +197,47 @@ payments %>%
           summarise(Unique_Elements = n_distinct(member_id)) # Now     
     #     summarise with unique elements 
 
-    #These results show that there are only 13 distinct party_ids and only 13 distinct parties. Since each member_id has a particular party_id, and we expect an MP to be a member of only one party, this makes sense. But are the donors less loyal to a party than their MP?
+    #These results show that there are only 13 distinct party_ids and only 13 distinct parties. Since each member_id has a particular party_id, and we expect an MP to be a member of only one party, this makes sense. But this isn't proof about the link between member_id and party_id uniqueness as a correlation. It's just an indication. So, the following code and analysis was undertaken to prove this:
 
+    #Read back in my merged dataframe containing all the relevant columns and collect data from the database 
     parmempay %>%
       collect() %>%
+      
+    # Filter out two rows with these two lines of codes. These rows were found to contain errors when running this segment of code without them, and the nature of the code errors uncovered the text entry inconsistencies in these two rows. So, these two lines of code were added to find and remove these two rows: 
+      
       filter(!str_detect(entity, 'Andrew Taylor'))  %>%
       filter(!str_detect(entity, 'Le Manoir aux Quat'))  %>%
-      select(entity,member_id,abbrev) %>%
+
+    # The three relevant columns were then selected, where their relationships may be deduced counting how many rows they have in common, as this tells us to what extent these variables map to each other with a one-to-one correpondence and are thus distinct, or whether there is multiplicity in intervariable mapping. 
+      
+        select(entity,member_id,abbrev) %>%
       group_by(entity,member_id,abbrev) %>%
+
+    # First, we group together all three variables and by just looking at the size of the tibble i.e. y where tibble has dimensions of y x 3, y reveals the number of possible combinations of each variable. Considering all three together gives us a base line (y = 4090). We then have to ungroup this group in order to do the next relationship test and continuing to add code that groups other variables:
+      
       ungroup %>%
+      
+    # I now group member_id and abbrev to check the indication made above that all MPs will be loyal to a single party. We know from the previous question that there are 595 distinct MPs in this dataframe so if the possible combinations (mapping) of MPs and party types is the same (i.e. 595) then they have a one-to-one correspondence, and this proofs the indication above. Let's see - we now group - check the dimension, y, of the tibble that the grouping generates via this R code and then compares it against the number of distinct 595 MPs:
+      
       group_by(member_id,abbrev) %>% #proof that MPs stick to one party
       ungroup %>%
-      group_by(entity,abbrev) %>%
-      ungroup %>%
+
+    # The full analysis is given below but this grouping shows all MPs to be loyal to their party, as we had suspected. These variables were then ungrouped so that we could start a new grouping.
+      
+    # Entity (donors) and abbrev (party types) are now grouped, to see how many combinations exists between them.
+      
+      group_by(entity,abbrev) %>%  #this produces 2467 relationships.
+      ungroup %>% # I then ungroup this group so that I can make another
+      
+    # We already saw in the solution to the previous question that there are a total of 2213 distinct entity values (i.e. distinct donors). We lost a few rows in filtering out two cases with data entry inconsistencies. So we just check this value again to be sure:
+      
       group_by(entity)
     #
-    # This shows that there are:
+    # This all checked out as we expect: y = 2211 i.e. as per the solution to the previous question but two less because I have filtered out two rows in the above analysis.
+    # 
+    # The overall data analysis provides these findings and conclusions:
+    #
+    # The results of these groupings and monitoring the associated y values in the y x 3 dimensions of the tibble of variables that have been grouped in different ways, shows that there are:
     #
     # 10,537 total rows of entity, member_id, abbrev
     # 4090 distinct combinations of entity, member_id, abbrev
@@ -218,7 +245,7 @@ payments %>%
     # 2467 entity distinct combinations of abbrev rows
     # 2211 rows of entity values (in the previous question, we determined this value to be 2213 which is consistent with this new value when we consider that we removed two rows of data from the dataframe parmempay to overcome a few errors in data entry).
     #
-    # These all show that all MPs are entirey loyal to one party (there are 595 distinct MPs and 595 combinations of MPs and Party categories, so this proves that there is a one-to-one mapping between them).
+    # These all show that all MPs are entirely loyal to one party (there are 595 distinct MPs and 595 combinations of MPs and Party categories, so this proves that there is a one-to-one mapping between them).
     #
     # But are donors to MPs as loyal to a party?
     #
@@ -238,24 +265,38 @@ payments %>%
 ## Which party has raised the greatest amount of money in each of the years 2020-2022?
 
 ```{r}
+# Convert relevant data tables into dataframes
+
 party_donations <-  dplyr::tbl(sky_westminster, "party_donations")
 parties <-  dplyr::tbl(sky_westminster, "parties")
 
+#Determine the total number of donations and place in descending order
 
 total_party_donations <- party_donations %>%   
 group_by(date, party_id) %>%   
 summarise(total_donations = sum(value, na.rm = TRUE)) %>%   
 ungroup() %>%
 arrange(desc(total_donations)) %>%   
+  
+# join parties to party_donations in order to resolve identities of the parties with the donors, and then collect the data  
+  
 left_join(parties, by = c("party_id"="id")) %>%   
 collect() %>%   
+  
+# Resolve the value of the year from the date variable that is given
+  
 mutate(date = lubridate::ymd(date), #lubridate doesn't work on DB directly-- need to collect first         
 year = year(date)) %>%   
+  
+# Determine the proportion of the total number of donations per year with respect to the total value of the donations and arrange the results in descending order
+  
 group_by(year, name) %>%   
 summarise(total_year_donations = sum(total_donations)) %>%   
 mutate(prop = total_year_donations / sum(total_year_donations)) %>%   
 ungroup() %>%
 arrange(desc(prop))
+
+# Display the resulting dataframe
 
 total_party_donations
 
@@ -289,17 +330,23 @@ knitr::include_graphics(here::here("images", "total_donations_graph.png"), error
 ```
 
 ```{r}
-library(scales)
-total_party_donations %>%
-  arrange(year) %>%
-    mutate(recode_name  = case_when(
+library(scales) # a library for the graphing options
+total_party_donations %>% #read in the dataframe
+  arrange(year) %>% #arrange data such that year is in ascending order
+
+# This classifies the main parties and groups the minor ones into other
+
+      mutate(recode_name  = case_when(
      name %in% c("Conservative") ~ "Conservative",
      name %in% c("Labour") ~ "Labour",
      name %in% c("Liberal Demoncrats") ~ "Liberal Democrats",
      name %in% c("Sinn Féin") ~ "Sinn Féin",
      name %in% c("Scottish National Party") ~ "Scottish National Party",
      TRUE ~ "Other"
-   )) %>%
+   )) %>% 
+
+# I now plot the data as side-by-side bar chart whose magnitude is in decreasing order and with titles and labels to aid visualisation:
+    
   ggplot(mapping = aes(year, total_year_donations, fill = recode_name)) + geom_bar(stat = "identity", position = position_dodge(), alpha = 0.75) + labs(x = NULL, y = NULL, title = "Conservatives have captured the majority of political donations", subtitle = "Donations to political parties, 2020-2022", fill = "Party") + theme(plot.title = element_text(size=9),plot.subtitle = element_text(size=8)) + scale_y_continuous(labels = comma)
 
 ```
@@ -309,7 +356,7 @@ This uses the default ggplot colour pallete, as I dont want you to worry about u
 Finally, when you are done working with the databse, make sure you close the connection, or disconnect from the database.
 
 ```{r}
-dbDisconnect(sky_westminster)
+dbDisconnect(sky_westminster) #disconnecting from the database
 ```
 
 # Anonymised Covid patient data from the CDC
@@ -330,7 +377,7 @@ tic() # start timer
 cdc_data <- open_dataset(here::here("data", "cdc-covid-geography"))
 toc() # stop timer
 
-#This dataset could be read in but my computer was out of memory when it tried to show a 'glimpse' of the data. So I have commented out the glimpse command below and I thus can't work on this dataset.
+#This dataset could be read in BUT my computer was out of memory when it tried to show a 'glimpse' of the data. So I have commented out the glimpse command below and I thus can't work on this dataset.
 #
 #FYI, the error that I obtain by using the command:
 #
@@ -393,8 +440,10 @@ All data come from [OpenSecrets.org](https://www.opensecrets.org), a *"website t
 #| warning: false
 #| message: false
 
-library(robotstxt)
+library(robotstxt) # checking the the website allows us to scrape data
 paths_allowed("https://www.opensecrets.org")
+
+# Reading in the website URL and creating an associated dataframe:
 
 base_url <- "https://www.opensecrets.org/political-action-committees-pacs/foreign-connected-pacs/2022"
 
@@ -571,6 +620,13 @@ url <- str_c(base_url, page)
 -   Write the data frame to a csv file called `all_consulting_jobs.csv` in the `data` folder.
 
 ```{r}
+#
+# NB: A practical point: I progressively work through the development of the above questions throughout this code block. 
+#
+#The resulting code that defines the final function and so forth is provided at the end of this code block.
+#
+#
+#
 # Initial test work to develop the underpinning code ideas towards the function development:- working through the first two questions:
 
 #This function will have one input: the URL of the webpage and should return a data frame with four columns (variables): job, firm, functional area, and type
@@ -731,15 +787,22 @@ knitr::include_graphics(here::here("images", "electricity-shiny.png"), error = F
 
 You can use chatGPT to get the basic layout of Shiny app, but you need to adjust the code it gives you. Ask chatGPT to create the Shiny app using the `gapminder` data and make up similar requests for the inputs/outpus you are thinking of deploying.
 
+```{r}
+# As noted above this question is optional. I have thus not included a solution in this homework document. I do plan to create a shiny app and present this in another form. I found the following tutorial on line that may be helpful to learn what is required of this shiny app creation:
+# https://mastering-shiny.org/basic-app.html
+#
+
+```
+
 # Deliverables
 
 There is a lot of explanatory text, comments, etc. You do not need these, so delete them and produce a stand-alone document that you could share with someone. Knit the edited and completed R Markdown (Rmd) file as a Word or HTML document (use the "Knit" button at the top of the script editor window) and upload it to Canvas. You must be commiting and pushing your changes to your own Github repo as you go along.
 
 # Details
 
--   Who did you collaborate with: TYPE NAMES HERE
--   Approximately how much time did you spend on this problem set: ANSWER HERE
--   What, if anything, gave you the most trouble: ANSWER HERE
+-   Who did you collaborate with: No-one although I asked the course professor a handful of questions once I felt that I was close with the final answer but was seemingly missing a small trick or there was a minor issue; or in one case, where I was totally stuck and needed freeing with a bit of code to understand the issue and catalyse me to propel forward.
+-   Approximately how much time did you spend on this problem set: 2.5 days
+-   What, if anything, gave you the most trouble: I found it hard to work out when to collect and, additionally, where specifically in the code one should place a collect(). I couldn't open the covid data on my laptop even when using arrow. Thus, I could not answer this question. I found it difficult to understand what exactly was being asked by the skywestminster questions; once I could comprehend the actual question, I could manage the coding, albeit I initially struggled with the group and ungroup tricks which are important in the earlier questions about this database. That said, I now feel that I understand the grouping and ungrouping concepts within a stream of code and so I have learnt well from this exercise on this account.
 
 **Please seek out help when you need it,** and remember the [15-minute rule](https://dsb2023.netlify.app/syllabus/#the-15-minute-rule){target="_blank"}. You know enough R (and have enough examples of code from class and your readings) to be able to do this. If you get stuck, ask for help from others, post a question on Slack-- and remember that I am here to help too!
 
